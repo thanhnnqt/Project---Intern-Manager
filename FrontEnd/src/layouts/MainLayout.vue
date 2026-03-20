@@ -164,7 +164,7 @@ const handleLogout = () => {
 /* Main Content */
 .main-content {
   flex: 1;
-  padding: 32px;
+  padding: 16px 24px;
   overflow-y: scroll;
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE/Edge */
@@ -178,7 +178,7 @@ const handleLogout = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 32px;
+  margin-bottom: 12px;
 }
 
 .breadcrumb {

@@ -1,8 +1,8 @@
 import api from './api';
 
 export const mentorService = {
-    async getAllMentors() {
-        const response = await api.get('/mentors');
+    async getAllMentors(params) {
+        const response = await api.get('/mentors', { params });
         return response.data;
     },
     async getMentorById(id) {

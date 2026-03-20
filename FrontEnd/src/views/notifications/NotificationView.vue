@@ -226,10 +226,10 @@ const fetchDataForModal = async () => {
   try {
     const [internData, mentorData] = await Promise.all([
       internService.getAllInterns({ size: 1000 }),
-      mentorService.getAllMentors()
+      mentorService.getAllMentors({ size: 100 })
     ]);
     interns.value = internData.content;
-    mentors.value = mentorData;
+    mentors.value = mentorData.content;
   } catch (error) {
     console.error('Lỗi khi tải dữ liệu cho modal:', error);
   }
@@ -681,9 +681,31 @@ const formatDate = (dateString) => {
   border: 1px solid #e0e5f2;
   border-radius: 12px;
   flex: 1;
-  min-height: 250px;
   display: flex;
   flex-direction: column;
+}
+
+.intern-items {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.intern-items::-webkit-scrollbar {
+  width: 6px;
+}
+
+.intern-items::-webkit-scrollbar-track {
+  background: #f4f7fe;
+  border-radius: 10px;
+}
+
+.intern-items::-webkit-scrollbar-thumb {
+  background: #a3aed0;
+  border-radius: 10px;
+}
+
+.intern-items::-webkit-scrollbar-thumb:hover {
+  background: #4318ff;
 }
 
 .list-actions {

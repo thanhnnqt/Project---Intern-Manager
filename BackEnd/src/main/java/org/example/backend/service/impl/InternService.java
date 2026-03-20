@@ -1,4 +1,4 @@
-package org.example.backend.service;
+package org.example.backend.service.impl;
 
 import org.example.backend.dto.InternRequest;
 import org.example.backend.dto.InternResponse;
@@ -8,7 +8,8 @@ import org.example.backend.entity.Mentor;
 import org.example.backend.repository.InternRepository;
 import org.example.backend.repository.AccountRepository;
 import org.example.backend.repository.MentorRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.example.backend.service.IInternService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Page;
@@ -16,26 +17,30 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import jakarta.persistence.criteria.Join;
-import jakarta.persistence.criteria.JoinType;
 import org.springframework.util.StringUtils;
 
 @Service
 @org.springframework.transaction.annotation.Transactional
-public class InternService {
+@RequiredArgsConstructor
+public class InternService implements IInternService {
 
-    @Autowired
-    private InternRepository internRepository;
+    private final InternRepository internRepository;
+    private final AccountRepository accountRepository;
+    private final MentorRepository mentorRepository;
+    private final PasswordEncoder encoder;
 
-    @Autowired
-    private AccountRepository accountRepository;
-
-    @Autowired
-    private MentorRepository mentorRepository;
-
-    @Autowired
-    private PasswordEncoder encoder;
-
+    /**
+     * Lấy danh sách thực tập sinh có phân trang và lọc theo tiêu chí.
+     * 
+     * @param name (Tùy chọn) Tên thực tập sinh.
+     * @param university (Tùy chọn) Tên trường đại học.
+     * @param mentorId (Tùy chọn) ID của người hướng dẫn.
+     * @param status (Tùy chọn) Trạng thái thực tập.
+     * @param page Số trang hiện tại.
+     * @param size Số lượng bản ghi trên một trang.
+     * @param sortBy Trường dùng để sắp xếp.
+     * @return Page<InternResponse> Trang danh sách thực tập sinh.
+     */
     public Page<InternResponse> getAllInterns(String name, String university, Long mentorId, String status, int page, int size, String sortBy) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortBy).ascending());
         
@@ -64,11 +69,24 @@ public class InternService {
         return internRepository.findAll(spec, pageable).map(this::mapToResponse);
     }
 
+    /**
+     * Lấy thông tin chi tiết của một thực tập sinh theo ID.
+     * 
+     * @param id ID của thực tập sinh.
+     * @return InternResponse Thông tin chi tiết thực tập sinh.
+     */
     public InternResponse getInternById(Long id) {
         Intern intern = internRepository.findById(id).orElseThrow(() -> new RuntimeException("Intern not found"));
         return mapToResponse(intern);
     }
 
+    /**
+     * Tạo mới một thực tập sinh.
+     * Đồng thời tạo tài khoản đăng nhập (Account) cho thực tập sinh đó.
+     * 
+     * @param request Thông tin thực tập sinh cần tạo.
+     * @return InternResponse Thông tin thực tập sinh vừa tạo.
+     */
     public InternResponse createIntern(InternRequest request) {
         Account account = Account.builder()
                 .username(request.getEmail()) 
@@ -98,6 +116,13 @@ public class InternService {
         return mapToResponse(intern);
     }
 
+    /**
+     * Cập nhật thông tin thực tập sinh hiện có.
+     * 
+     * @param id ID của thực tập sinh cần cập nhật.
+     * @param request Thông tin cập nhật mới.
+     * @return InternResponse Thông tin thực tập sinh sau khi cập nhật.
+     */
     public InternResponse updateIntern(Long id, InternRequest request) {
         Intern intern = internRepository.findById(id).orElseThrow(() -> new RuntimeException("Intern not found"));
         
@@ -123,6 +148,11 @@ public class InternService {
         return mapToResponse(intern);
     }
 
+    /**
+     * Xóa một thực tập sinh khỏi hệ thống.
+     * 
+     * @param id ID của thực tập sinh cần xóa.
+     */
     public void deleteIntern(Long id) {
         Intern intern = internRepository.findById(id).orElseThrow(() -> new RuntimeException("Intern not found"));
         internRepository.delete(intern);

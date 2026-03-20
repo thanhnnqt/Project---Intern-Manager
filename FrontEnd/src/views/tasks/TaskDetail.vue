@@ -153,7 +153,6 @@ import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { taskService } from '../../services/taskService';
 import { commentService } from '../../services/commentService';
-import { fileService } from '../../services/fileService';
 import { useAuthStore } from '../../store/authStore';
 
 const route = useRoute();
@@ -176,14 +175,13 @@ const fetchAllData = async () => {
   const id = route.params.id;
   loading.value = true;
   try {
-    const [taskData, commentData, fileData] = await Promise.all([
+    const [taskData, commentData] = await Promise.all([
       taskService.getTaskById(id),
-      commentService.getCommentsByTaskId(id),
-      fileService.getFiles({ taskId: id })
+      commentService.getCommentsByTaskId(id)
     ]);
+    files.value = []; // Temporary disable files
     task.value = taskData;
     comments.value = commentData;
-    files.value = fileData;
   } catch (error) {
     console.error("Lỗi khi tải chi tiết task:", error);
   } finally {

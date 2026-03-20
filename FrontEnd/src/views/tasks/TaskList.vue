@@ -1,9 +1,8 @@
 <template>
   <div class="task-list-page">
-    <div class="page-header">
+    <div class="page-header compact">
       <div class="header-text">
         <h2>Danh sách Công việc</h2>
-        <p>Theo dõi và quản lý các task được giao cho thực tập sinh.</p>
       </div>
       <button class="create-btn" @click="handleCreate">
         <span class="icon">➕</span> Giao việc mới
@@ -107,20 +106,11 @@
       </div>
 
       <!-- Pagination -->
-      <div class="pagination" v-if="totalPages > 1">
-        <button :disabled="page === 0" @click="changePage(page - 1)" class="page-btn">Trước</button>
-        <div class="page-numbers">
-          <button 
-            v-for="p in totalPages" 
-            :key="p" 
-            :class="['page-num', { active: page === p - 1 }]"
-            @click="changePage(p - 1)"
-          >
-            {{ p }}
-          </button>
-        </div>
-        <button :disabled="page === totalPages - 1" @click="changePage(page + 1)" class="page-btn">Sau</button>
-      </div>
+      <Pagination 
+        v-model="page" 
+        :totalPages="totalPages" 
+        @update:modelValue="fetchTasks"
+      />
     </div>
 
     <!-- Loading Overlay -->
@@ -136,6 +126,7 @@ import { useRouter } from 'vue-router';
 import { taskService } from '../../services/taskService';
 import { internService } from '../../services/internService';
 import { mentorService } from '../../services/mentorService';
+import Pagination from '../../components/common/Pagination.vue';
 
 const router = useRouter();
 const tasks = ref([]);
@@ -143,7 +134,7 @@ const interns = ref([]);
 const mentors = ref([]);
 const loading = ref(true);
 const page = ref(0);
-const pageSize = ref(10);
+const pageSize = ref(5);
 const totalPages = ref(0);
 
 const filters = reactive({
@@ -182,7 +173,8 @@ const fetchInitialData = async () => {
     // We need simple lists for filters
     const internData = await internService.getAllInterns({ size: 100 });
     interns.value = internData.content;
-    mentors.value = await mentorService.getAllMentors();
+    const mentorData = await mentorService.getAllMentors({ size: 100 });
+    mentors.value = mentorData.content;
   } catch (error) {
     console.error("Lỗi khi tải dữ liệu khởi tạo:", error);
   }
@@ -196,10 +188,6 @@ const debounceSearch = () => {
   }, 500);
 };
 
-const changePage = (newPage) => {
-  page.value = newPage;
-  fetchTasks();
-};
 
 const handleCreate = () => {
   router.push('/tasks/create');
@@ -272,20 +260,14 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 32px;
+  margin-bottom: 8px;
 }
 
-.header-text h2 {
+.page-header.compact h2 {
   font-size: 24px;
   font-weight: 800;
   color: #1b2559;
   margin: 0;
-}
-
-.header-text p {
-  color: #4a5568;
-  margin: 4px 0 0;
-  font-weight: 500;
 }
 
 .create-btn {
@@ -302,13 +284,13 @@ onMounted(() => {
 
 .card {
   background: white;
-  border-radius: 20px;
-  padding: 24px;
+  border-radius: 16px;
+  padding: 12px 20px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
 }
 
 .filters-card {
-  margin-bottom: 24px;
+  margin-bottom: 12px;
   display: flex;
   justify-content: space-between;
   gap: 20px;
@@ -498,47 +480,6 @@ option {
   color: #ff5b5b;
 }
 
-/* Pagination */
-.pagination {
-  margin-top: 24px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 16px;
-}
-
-.page-btn {
-  padding: 8px 16px;
-  background: #f4f7fe;
-  border: none;
-  border-radius: 8px;
-  color: #4318ff;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-.page-numbers {
-  display: flex;
-  gap: 8px;
-}
-
-.page-num {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  border: none;
-  background: white;
-  color: #1b2559;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.page-num.active {
-  background: #4318ff;
-  color: white;
-}
 
 .loading-overlay {
   position: fixed;

@@ -1,9 +1,8 @@
 <template>
   <div class="mentor-list-page">
-    <div class="page-header">
+    <div class="page-header compact">
       <div class="header-text">
         <h2>Danh sách Người hướng dẫn</h2>
-        <p>Quản lý đội ngũ hướng dẫn và theo dõi số lượng thực tập sinh.</p>
       </div>
       <button class="create-btn" @click="router.push('/mentors/create')">
         <span class="icon">➕</span> Thêm mới
@@ -18,6 +17,7 @@
           type="text"
           v-model="searchQuery"
           placeholder="Tìm kiếm theo tên hoặc email..."
+          @input="debounceSearch"
         />
       </div>
     </div>
@@ -36,7 +36,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="mentor in filteredMentors" :key="mentor.id">
+            <tr v-for="mentor in mentors" :key="mentor.id">
               <td>
                 <div class="user-cell">
                   <img :src="mentor.avatar || 'https://ui-avatars.com/api/?name=' + mentor.name" class="table-avatar" />
@@ -64,12 +64,19 @@
                 </div>
               </td>
             </tr>
-            <tr v-if="filteredMentors.length === 0 && !loading">
+            <tr v-if="mentors.length === 0 && !loading">
               <td colspan="5" class="empty-state">Không tìm thấy người hướng dẫn nào.</td>
             </tr>
           </tbody>
         </table>
       </div>
+
+      <!-- Pagination -->
+      <Pagination 
+        v-model="page" 
+        :totalPages="totalPages" 
+        @update:modelValue="fetchMentors"
+      />
     </div>
 
     <!-- Loading State -->
@@ -83,16 +90,31 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { mentorService } from '../../services/mentorService';
+import Pagination from '../../components/common/Pagination.vue';
 
 const router = useRouter();
 const mentors = ref([]);
 const loading = ref(true);
 const searchQuery = ref('');
+const page = ref(0);
+const pageSize = ref(5);
+const totalPages = ref(0);
+const sortBy = ref('id');
+
+let debounceTimer = null;
 
 const fetchMentors = async () => {
   try {
     loading.value = true;
-    mentors.value = await mentorService.getAllMentors();
+    const params = {
+      page: page.value,
+      size: pageSize.value,
+      sortBy: sortBy.value,
+      name: searchQuery.value || undefined
+    };
+    const data = await mentorService.getAllMentors(params);
+    mentors.value = data.content;
+    totalPages.value = data.totalPages;
   } catch (error) {
     console.error("Lỗi khi tải danh sách mentor:", error);
   } finally {
@@ -100,13 +122,15 @@ const fetchMentors = async () => {
   }
 };
 
-const filteredMentors = computed(() => {
-  const query = searchQuery.value.toLowerCase();
-  return mentors.value.filter(m =>
-    m.name.toLowerCase().includes(query) ||
-    m.email.toLowerCase().includes(query)
-  );
-});
+const debounceSearch = () => {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    page.value = 0;
+    fetchMentors();
+  }, 500);
+};
+
+
 
 const handleDelete = async (id) => {
   if (confirm("Bạn có chắc chắn muốn xóa người hướng dẫn này không?")) {
@@ -131,20 +155,14 @@ onMounted(fetchMentors);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 32px;
+  margin-bottom: 8px;
 }
 
-.header-text h2 {
+.page-header.compact h2 {
   font-size: 24px;
   font-weight: 800;
   color: #1b2559;
   margin: 0;
-}
-
-.header-text p {
-  color: #a3aed0;
-  margin: 4px 0 0;
-  font-weight: 500;
 }
 
 .create-btn {
@@ -166,13 +184,13 @@ onMounted(fetchMentors);
 
 .card {
   background: white;
-  border-radius: 20px;
-  padding: 24px;
+  border-radius: 16px;
+  padding: 12px 20px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
 }
 
 .filter-bar {
-  margin-bottom: 24px;
+  margin-bottom: 12px;
 }
 
 .search-input {
@@ -329,4 +347,5 @@ onMounted(fetchMentors);
   background: rgba(255, 255, 255, 0.5);
   border-radius: 20px;
 }
+
 </style>

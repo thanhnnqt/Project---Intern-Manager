@@ -128,7 +128,6 @@ import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { internService } from '../../services/internService';
 import { taskService } from '../../services/taskService';
-import { fileService } from '../../services/fileService';
 
 const route = useRoute();
 const router = useRouter();
@@ -142,14 +141,13 @@ const loading = ref(true);
 const fetchAllData = async () => {
   try {
     loading.value = true;
-    const [internData, tasksData, filesData] = await Promise.all([
+    const [internData, tasksData] = await Promise.all([
       internService.getInternById(internId),
-      taskService.getTasksByInternId(internId),
-      fileService.getFilesByInternId(internId)
+      taskService.getTasksByInternId(internId)
     ]);
+    files.value = []; // Temporary disable files
     intern.value = internData;
     tasks.value = tasksData;
-    files.value = filesData;
   } catch (error) {
     console.error("Lỗi khi tải dữ liệu thực tập sinh:", error);
   } finally {

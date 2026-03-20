@@ -1,4 +1,4 @@
-package org.example.backend.service;
+package org.example.backend.service.impl;
 
 import org.example.backend.dto.CommentRequest;
 import org.example.backend.dto.CommentResponse;
@@ -12,7 +12,8 @@ import org.example.backend.repository.TaskRepository;
 import org.example.backend.repository.AccountRepository;
 import org.example.backend.repository.MentorRepository;
 import org.example.backend.repository.InternRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.example.backend.service.ICommentService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -20,35 +21,40 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-public class CommentService {
+@RequiredArgsConstructor
+public class CommentService implements ICommentService {
 
-    @Autowired
-    private CommentRepository commentRepository;
+    private final CommentRepository commentRepository;
+    private final TaskRepository taskRepository;
+    private final AccountRepository accountRepository;
+    private final MentorRepository mentorRepository;
+    private final InternRepository internRepository;
 
-    @Autowired
-    private TaskRepository taskRepository;
-
-    @Autowired
-    private AccountRepository accountRepository;
-
-    @Autowired
-    private MentorRepository mentorRepository;
-
-    @Autowired
-    private InternRepository internRepository;
-
+    /**
+     * Lấy danh sách bình luận theo ID của task.
+     * Sắp xếp theo thời gian tạo giảm dần (mới nhất lên đầu).
+     * 
+     * @param taskId ID của task cần lấy bình luận.
+     * @return List<CommentResponse> Danh sách các bình luận đã được ánh xạ sang DTO.
+     */
     public List<CommentResponse> getCommentsByTaskId(Long taskId) {
         return commentRepository.findByTaskIdOrderByCreatedAtDesc(taskId).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Thêm một bình luận mới vào task.
+     * 
+     * @param request Chứa nội dung bình luận, ID task và ID tài khoản người dùng.
+     * @return CommentResponse Thông tin bình luận vừa tạo.
+     */
     public CommentResponse addComment(CommentRequest request) {
         Task task = taskRepository.findById(request.getTaskId())
                 .orElseThrow(() -> new RuntimeException("Task not found"));
         Account account = accountRepository.findById(request.getUserId()) // request.getUserId() now refers to accountId
                 .orElseThrow(() -> new RuntimeException("Account not found"));
-
+        
         Comment comment = Comment.builder()
                 .content(request.getContent())
                 .task(task)
@@ -59,6 +65,11 @@ public class CommentService {
         return mapToResponse(commentRepository.save(comment));
     }
 
+    /**
+     * Xóa một bình luận theo ID.
+     * 
+     * @param id ID của bình luận cần xóa.
+     */
     public void deleteComment(Long id) {
         commentRepository.deleteById(id);
     }
@@ -70,9 +81,7 @@ public class CommentService {
         
         if (account.getRole() == Account.Role.MENTOR) {
             mentorRepository.findByAccountUsername(account.getUsername()).ifPresent(m -> {
-                // name is final if assigned in ifPresent, so we use a trick or just use variables
             });
-            // Re-fetch to be safe or use a helper
             Mentor mentor = mentorRepository.findByAccountUsername(account.getUsername()).orElse(null);
             if (mentor != null) {
                 name = mentor.getFullName();
@@ -85,7 +94,7 @@ public class CommentService {
                 avatar = intern.getAvatar();
             }
         } else {
-            name = account.getUsername(); // Admin or other
+            name = account.getUsername();
         }
 
         return CommentResponse.builder()

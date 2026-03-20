@@ -1,4 +1,4 @@
-package org.example.backend.service;
+package org.example.backend.service.impl;
 
 import org.example.backend.dto.DashboardResponse;
 import org.example.backend.dto.InternResponse;
@@ -8,24 +8,28 @@ import org.example.backend.entity.Task;
 import org.example.backend.repository.InternRepository;
 import org.example.backend.repository.TaskRepository;
 import org.example.backend.repository.MentorRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.example.backend.service.IDashboardService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-public class DashboardService {
+@RequiredArgsConstructor
+public class DashboardService implements IDashboardService {
 
-    @Autowired
-    private InternRepository internRepository;
+    private final InternRepository internRepository;
+    private final TaskRepository taskRepository;
+    private final MentorRepository mentorRepository;
 
-    @Autowired
-    private TaskRepository taskRepository;
-
-    @Autowired
-    private MentorRepository mentorRepository;
-
+    /**
+     * Lấy dữ liệu tổng quan cho trang Dashboard.
+     * Bao gồm: tổng số thực tập sinh, mentor, task, số task đã hoàn thành, 
+     * danh sách 5 thực tập sinh mới nhất và 5 task mới nhất.
+     * 
+     * @return DashboardResponse Chứa toàn bộ dữ liệu thống kê và danh sách gần đây.
+     */
     public DashboardResponse getDashboardData() {
         long totalInterns = internRepository.count();
         long totalMentors = mentorRepository.count();

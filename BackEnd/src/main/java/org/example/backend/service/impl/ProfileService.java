@@ -1,4 +1,4 @@
-package org.example.backend.service;
+package org.example.backend.service.impl;
 
 import org.example.backend.dto.ProfileResponse;
 import org.example.backend.dto.UpdatePasswordRequest;
@@ -9,7 +9,8 @@ import org.example.backend.entity.Intern;
 import org.example.backend.repository.AccountRepository;
 import org.example.backend.repository.MentorRepository;
 import org.example.backend.repository.InternRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.example.backend.service.IProfileService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,58 +19,84 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional
-public class ProfileService {
+@RequiredArgsConstructor
+public class ProfileService implements IProfileService {
 
-    @Autowired
-    private AccountRepository accountRepository;
+    private final AccountRepository accountRepository;
+    private final MentorRepository mentorRepository;
+    private final InternRepository internRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private MentorRepository mentorRepository;
-
-    @Autowired
-    private InternRepository internRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
+    /**
+     * Lấy thông tin hồ sơ của người dùng hiện tại đang đăng nhập.
+     * Tự động xác định loại người dùng (Mentor, Intern hoặc Admin) để trả về dữ liệu phù hợp.
+     * 
+     * @return ProfileResponse Thông tin hồ sơ chi tiết.
+     */
     public ProfileResponse getCurrentProfile() {
         Account account = getCurrentAccount();
-        if (account.getRole() == Account.Role.MENTOR) {
-            Mentor mentor = mentorRepository.findByAccountUsername(account.getUsername())
-                    .orElseThrow(() -> new RuntimeException("Mentor profile not found"));
-            return mapMentorToResponse(mentor);
-        } else {
-            Intern intern = internRepository.findByAccountUsername(account.getUsername())
-                    .orElseThrow(() -> new RuntimeException("Intern profile not found"));
-            return mapInternToResponse(intern);
+        
+        // Try to find Mentor profile
+        var mentorOpt = mentorRepository.findByAccountUsername(account.getUsername());
+        if (mentorOpt.isPresent()) {
+            return mapMentorToResponse(mentorOpt.get());
         }
+        
+        // Try to find Intern profile
+        var internOpt = internRepository.findByAccountUsername(account.getUsername());
+        if (internOpt.isPresent()) {
+            return mapInternToResponse(internOpt.get());
+        }
+        
+        // Fallback for ADMIN or users without specific profile
+        return ProfileResponse.builder()
+                .username(account.getUsername())
+                .role(account.getRole())
+                // ADMINs might not have these fields in a separate table, so we use defaults or account info
+                .fullName("Administrator") 
+                .email(account.getUsername()) // Use username as email fallback if email is not in Account
+                .build();
     }
 
+    /**
+     * Cập nhật thông tin hồ sơ cá nhân.
+     * Cho phép cập nhật họ tên, email, số điện thoại và ảnh đại diện.
+     * 
+     * @param request Chứa các thông tin mới cần cập nhật.
+     * @return ProfileResponse Thông tin hồ sơ sau khi đã cập nhật.
+     */
     public ProfileResponse updateProfile(UpdateProfileRequest request) {
         Account account = getCurrentAccount();
-        if (account.getRole() == Account.Role.MENTOR) {
-            Mentor mentor = mentorRepository.findByAccountUsername(account.getUsername())
-                    .orElseThrow(() -> new RuntimeException("Mentor profile not found"));
-            
+        
+        var mentorOpt = mentorRepository.findByAccountUsername(account.getUsername());
+        if (mentorOpt.isPresent()) {
+            Mentor mentor = mentorOpt.get();
             if (request.getFullName() != null) mentor.setFullName(request.getFullName());
             if (request.getEmail() != null) mentor.setEmail(request.getEmail());
             if (request.getPhone() != null) mentor.setPhone(request.getPhone());
             if (request.getAvatar() != null) mentor.setAvatar(request.getAvatar());
-            
             return mapMentorToResponse(mentorRepository.save(mentor));
-        } else {
-            Intern intern = internRepository.findByAccountUsername(account.getUsername())
-                    .orElseThrow(() -> new RuntimeException("Intern profile not found"));
-            
+        }
+        
+        var internOpt = internRepository.findByAccountUsername(account.getUsername());
+        if (internOpt.isPresent()) {
+            Intern intern = internOpt.get();
             if (request.getFullName() != null) intern.setFullName(request.getFullName());
             if (request.getEmail() != null) intern.setEmail(request.getEmail());
             if (request.getPhone() != null) intern.setPhone(request.getPhone());
             if (request.getAvatar() != null) intern.setAvatar(request.getAvatar());
-            
             return mapInternToResponse(internRepository.save(intern));
         }
+
+        throw new RuntimeException("Không tìm thấy hồ sơ cá nhân để cập nhật cho tài khoản này.");
     }
 
+    /**
+     * Thay đổi mật khẩu cho người dùng hiện tại.
+     * Yêu cầu xác nhận mật khẩu cũ trước khi đặt mật khẩu mới.
+     * 
+     * @param request Chứa mật khẩu cũ và mật khẩu mới.
+     */
     public void updatePassword(UpdatePasswordRequest request) {
         Account account = getCurrentAccount();
         

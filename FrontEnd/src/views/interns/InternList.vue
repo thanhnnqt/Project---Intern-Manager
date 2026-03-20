@@ -1,9 +1,8 @@
 <template>
   <div class="intern-list-page">
-    <div class="page-header">
+    <div class="page-header compact">
       <div class="header-content">
         <h1>Danh sách Thực tập sinh</h1>
-        <p>Quản lý và theo dõi thông tin các thực tập sinh trong hệ thống.</p>
       </div>
       <router-link v-if="user?.role === 'ADMIN'" to="/interns/create" class="create-btn" id="add-intern-btn">
         <span class="icon">➕</span> Thêm thực tập sinh
@@ -107,32 +106,11 @@
       </div>
 
       <!-- Pagination -->
-      <div class="pagination" v-if="totalPages > 1">
-        <button 
-          :disabled="page === 0" 
-          @click="changePage(page - 1)" 
-          class="page-btn"
-        >
-          Trước
-        </button>
-        <div class="page-numbers">
-          <button 
-            v-for="p in totalPages" 
-            :key="p" 
-            :class="['page-num', { active: page === p - 1 }]"
-            @click="changePage(p - 1)"
-          >
-            {{ p }}
-          </button>
-        </div>
-        <button 
-          :disabled="page === totalPages - 1" 
-          @click="changePage(page + 1)" 
-          class="page-btn"
-        >
-          Sau
-        </button>
-      </div>
+      <Pagination 
+        v-model="page" 
+        :totalPages="totalPages" 
+        @update:modelValue="fetchInterns"
+      />
     </div>
   </div>
 </template>
@@ -143,6 +121,7 @@ import { useRouter } from 'vue-router';
 import { internService } from '../../services/internService';
 import { mentorService } from '../../services/mentorService';
 import { useAuthStore } from '../../store/authStore';
+import Pagination from '../../components/common/Pagination.vue';
 import api from '../../services/api';
 
 const authStore = useAuthStore();
@@ -152,7 +131,7 @@ const router = useRouter();
 const interns = ref([]);
 const loading = ref(true);
 const page = ref(0);
-const pageSize = ref(10);
+const pageSize = ref(5);
 const totalPages = ref(0);
 const sortBy = ref('id');
 
@@ -198,15 +177,11 @@ const debounceSearch = () => {
   }, 500);
 };
 
-const changePage = (newPage) => {
-  page.value = newPage;
-  fetchInterns();
-};
 
 const fetchMentors = async () => {
   try {
-    const data = await mentorService.getAllMentors();
-    mentors.value = data;
+    const data = await mentorService.getAllMentors({ size: 100 });
+    mentors.value = data.content;
   } catch (error) {
     console.error("Không thể tải danh sách Mentor:", error);
   }
@@ -254,11 +229,11 @@ const formatStatus = (status) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 32px;
+  margin-bottom: 8px;
 }
 
-.header-content h1 {
-  font-size: 28px;
+.page-header.compact h1 {
+  font-size: 24px;
   font-weight: 700;
   color: #1b2559;
   margin: 0;
@@ -290,9 +265,9 @@ const formatStatus = (status) => {
 /* Filters */
 .filters-card {
   background: white;
-  padding: 20px;
-  border-radius: 20px;
-  margin-bottom: 24px;
+  padding: 12px 20px;
+  border-radius: 16px;
+  margin-bottom: 12px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -353,10 +328,10 @@ option {
 /* Table Card */
 .table-card {
   background: white;
-  border-radius: 20px;
-  padding: 24px;
+  border-radius: 16px;
+  padding: 16px 20px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-  min-height: 400px;
+  min-height: 300px;
   position: relative;
 }
 
@@ -463,50 +438,6 @@ option {
   color: #ff5b5b;
 }
 
-/* Pagination */
-.pagination {
-  margin-top: 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.page-btn {
-  padding: 10px 20px;
-  border: none;
-  background: #f4f7fe;
-  color: #4318ff;
-  font-weight: 700;
-  border-radius: 10px;
-  cursor: pointer;
-}
-
-.page-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.page-numbers {
-  display: flex;
-  gap: 8px;
-}
-
-.page-num {
-  width: 40px;
-  height: 40px;
-  border: none;
-  background: white;
-  color: #a3aed0;
-  font-weight: 700;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.page-num.active {
-  background: #4318ff;
-  color: white;
-}
 
 .loading-overlay {
   padding: 60px 0;

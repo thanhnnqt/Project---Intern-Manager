@@ -45,27 +45,15 @@
               <tr>
                 <th>Tiêu đề</th>
                 <th>Thực tập sinh</th>
-                <th>Trạng thái</th>
-                <th>Ưu tiên</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="task in stats.recentTasks" :key="task.id">
                 <td>{{ task.title }}</td>
                 <td>{{ task.internName }}</td>
-                <td>
-                  <span :class="['status-badge', task.status.toLowerCase()]">
-                    {{ formatTaskStatus(task.status) }}
-                  </span>
-                </td>
-                <td>
-                  <span :class="['priority-badge', task.priority?.toLowerCase()]">
-                    {{ formatPriority(task.priority) }}
-                  </span>
-                </td>
               </tr>
               <tr v-if="stats.recentTasks.length === 0">
-                <td colspan="4" class="empty-state">Không có dữ liệu</td>
+                <td colspan="2" class="empty-state">Không có dữ liệu</td>
               </tr>
             </tbody>
           </table>
@@ -85,7 +73,6 @@
                 <th>Họ tên</th>
                 <th>Trường học</th>
                 <th>Ngành học</th>
-                <th>Trạng thái</th>
               </tr>
             </thead>
             <tbody>
@@ -96,14 +83,9 @@
                 </td>
                 <td>{{ intern.university }}</td>
                 <td>{{ intern.major }}</td>
-                <td>
-                    <span :class="['status-badge', intern.status.toLowerCase()]">
-                        {{ formatInternStatus(intern.status) }}
-                    </span>
-                </td>
               </tr>
               <tr v-if="stats.recentInterns.length === 0">
-                <td colspan="4" class="empty-state">Không có dữ liệu</td>
+                <td colspan="3" class="empty-state">Không có dữ liệu</td>
               </tr>
             </tbody>
           </table>

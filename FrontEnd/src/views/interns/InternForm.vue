@@ -159,7 +159,7 @@ onMounted(async () => {
   // Fetch mentors
   try {
     const response = await api.get('/mentors');
-    mentors.value = response.data;
+    mentors.value = response.data.content;
   } catch (err) {
     console.error("Lỗi khi tải danh sách mentor:", err);
   }

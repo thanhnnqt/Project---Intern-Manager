@@ -1,4 +1,4 @@
-package org.example.backend.service;
+package org.example.backend.service.impl;
 
 import org.example.backend.dto.TaskRequest;
 import org.example.backend.dto.TaskResponse;
@@ -8,7 +8,8 @@ import org.example.backend.repository.MentorRepository;
 import org.example.backend.entity.Mentor;
 import org.example.backend.entity.Intern;
 import org.example.backend.entity.Task;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.example.backend.service.ITaskService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -21,17 +22,23 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
-public class TaskService {
+@RequiredArgsConstructor
+public class TaskService implements ITaskService {
 
-    @Autowired
-    private TaskRepository taskRepository;
+    private final TaskRepository taskRepository;
+    private final MentorRepository mentorRepository;
+    private final InternRepository internRepository;
 
-    @Autowired
-    private MentorRepository mentorRepository;
-
-    @Autowired
-    private InternRepository internRepository;
-
+    /**
+     * Lấy danh sách nhiệm vụ (Task) có phân trang và lọc theo tiêu chí.
+     * 
+     * @param title (Tùy chọn) Tiêu đề nhiệm vụ để tìm kiếm.
+     * @param status (Tùy chọn) Trạng thái nhiệm vụ.
+     * @param internId (Tùy chọn) ID của thực tập sinh được giao.
+     * @param mentorId (Tùy chọn) ID của người hướng dẫn tạo nhiệm vụ.
+     * @param pageable Thông tin phân trang.
+     * @return Page<TaskResponse> Trang danh sách nhiệm vụ.
+     */
     public Page<TaskResponse> getAllTasks(String title, String status, Long internId, Long mentorId, Pageable pageable) {
         try {
             Specification<Task> spec = (root, query, cb) -> {
@@ -64,17 +71,35 @@ public class TaskService {
         }
     }
 
+    /**
+     * Lấy danh sách các nhiệm vụ được giao cho một thực tập sinh cụ thể.
+     * 
+     * @param internId ID của thực tập sinh.
+     * @return List<TaskResponse> Danh sách nhiệm vụ của thực tập sinh.
+     */
     public List<TaskResponse> getTasksByInternId(Long internId) {
         return taskRepository.findByInternId(internId).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Lấy thông tin chi tiết của một nhiệm vụ theo ID.
+     * 
+     * @param id ID của nhiệm vụ.
+     * @return TaskResponse Thông tin chi tiết nhiệm vụ.
+     */
     public TaskResponse getTaskById(Long id) {
         Task task = taskRepository.findById(id).orElseThrow(() -> new RuntimeException("Task not found"));
         return mapToResponse(task);
     }
 
+    /**
+     * Tạo mới một nhiệm vụ và giao cho thực tập sinh (nếu có).
+     * 
+     * @param request Thông tin chi tiết của nhiệm vụ mới.
+     * @return TaskResponse Thông tin nhiệm vụ vừa tạo.
+     */
     @Transactional
     public TaskResponse createTask(TaskRequest request) {
         try {
@@ -106,6 +131,13 @@ public class TaskService {
         }
     }
 
+    /**
+     * Cập nhật thông tin của một nhiệm vụ hiện có.
+     * 
+     * @param id ID của nhiệm vụ cần cập nhật.
+     * @param request Thông tin cập nhật mới.
+     * @return TaskResponse Thông tin nhiệm vụ sau khi cập nhật.
+     */
     @Transactional
     public TaskResponse updateTask(Long id, TaskRequest request) {
         Task task = taskRepository.findById(id).orElseThrow(() -> new RuntimeException("Task not found"));
@@ -131,6 +163,11 @@ public class TaskService {
         return mapToResponse(taskRepository.save(task));
     }
 
+    /**
+     * Xóa một nhiệm vụ khỏi hệ thống theo ID.
+     * 
+     * @param id ID của nhiệm vụ cần xóa.
+     */
     @Transactional
     public void deleteTask(Long id) {
         taskRepository.deleteById(id);

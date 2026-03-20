@@ -120,10 +120,10 @@ const fetchData = async () => {
   try {
     const [internData, mentorData] = await Promise.all([
       internService.getAllInterns({ size: 100 }),
-      mentorService.getAllMentors()
+      mentorService.getAllMentors({ size: 100 })
     ]);
     interns.value = internData.content;
-    mentors.value = mentorData;
+    mentors.value = mentorData.content;
 
     if (isEdit.value) {
       const task = await taskService.getTaskById(route.params.id);

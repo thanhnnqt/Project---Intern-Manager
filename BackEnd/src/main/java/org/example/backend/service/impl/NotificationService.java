@@ -1,4 +1,4 @@
-package org.example.backend.service;
+package org.example.backend.service.impl;
 
 import org.example.backend.dto.NotificationRequest;
 import org.example.backend.dto.NotificationResponse;
@@ -6,7 +6,8 @@ import org.example.backend.entity.Notification;
 import org.example.backend.entity.Account;
 import org.example.backend.repository.NotificationRepository;
 import org.example.backend.repository.AccountRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.example.backend.service.INotificationService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -18,14 +19,18 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional
-public class NotificationService {
+@RequiredArgsConstructor
+public class NotificationService implements INotificationService {
 
-    @Autowired
-    private NotificationRepository notificationRepository;
+    private final NotificationRepository notificationRepository;
+    private final AccountRepository accountRepository;
 
-    @Autowired
-    private AccountRepository accountRepository;
-
+    /**
+     * Lấy danh sách thông báo của người dùng hiện tại đang đăng nhập.
+     * Sắp xếp theo thời gian tạo giảm dần.
+     * 
+     * @return List<NotificationResponse> Danh sách các thông báo của người dùng.
+     */
     public List<NotificationResponse> getMyNotifications() {
         Account account = getCurrentAccount();
         return notificationRepository.findByAccountOrderByCreatedAtDesc(account).stream()
@@ -33,11 +38,22 @@ public class NotificationService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Đếm số lượng thông báo chưa đọc của người dùng hiện tại.
+     * 
+     * @return long Số lượng thông báo chưa đọc.
+     */
     public long getUnreadCount() {
         Account account = getCurrentAccount();
         return notificationRepository.countByAccountAndIsReadFalse(account);
     }
 
+    /**
+     * Đánh dấu một thông báo cụ thể là đã đọc.
+     * Kiểm tra quyền sở hữu thông báo trước khi cập nhật.
+     * 
+     * @param id ID của thông báo cần đánh dấu.
+     */
     public void markAsRead(Long id) {
         Notification notification = notificationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Notification not found"));
@@ -52,11 +68,20 @@ public class NotificationService {
         notificationRepository.save(notification);
     }
 
+    /**
+     * Đánh dấu tất cả thông báo của người dùng hiện tại là đã đọc.
+     */
     public void markAllAsRead() {
         Account account = getCurrentAccount();
         notificationRepository.markAllAsReadForAccount(account);
     }
 
+    /**
+     * Tạo thông báo gửi đến các tài khoản được chỉ định hoặc toàn bộ thực tập sinh.
+     * Nếu danh sách ID tài khoản trống, thông báo sẽ gửi đến tất cả thực tập sinh.
+     * 
+     * @param request Chứa thông tin tiêu đề, nội dung và danh sách ID tài khoản nhận.
+     */
     public void createNotification(NotificationRequest request) {
         List<Account> targetAccounts;
         if (request.getAccountIds() != null && !request.getAccountIds().isEmpty()) {
