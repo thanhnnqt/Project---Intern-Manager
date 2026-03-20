@@ -214,7 +214,11 @@ const newNotification = ref({
 const fetchNotifications = async () => {
   try {
     loading.value = true;
-    notifications.value = await notificationService.getNotifications();
+    const data = await notificationService.getNotifications();
+    notifications.value = data.map(n => ({
+      ...n,
+      isRead: n.isRead !== undefined ? n.isRead : n.read
+    }));
   } catch (error) {
     console.error('Lỗi khi tải thông báo:', error);
   } finally {
@@ -871,6 +875,8 @@ const formatDate = (dateString) => {
   font-weight: 700;
   color: #1b2559;
   margin: 0 0 6px 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .unread .notification-title {
@@ -882,6 +888,8 @@ const formatDate = (dateString) => {
   color: #707ebe;
   margin: 0 0 10px 0;
   line-height: 1.5;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .notification-time {
